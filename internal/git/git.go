@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -17,8 +18,14 @@ type Client struct {
 	UserEmail string
 }
 
-// Configure sets the local git identity.
+// Configure marks the working directory as safe (required inside Docker containers
+// where the workspace owner differs from the git process user) and sets the local
+// git identity.
 func (c *Client) Configure() error {
+	absDir, _ := filepath.Abs(c.Dir)
+	if err := c.runGlobal("config", "--global", "--add", "safe.directory", absDir); err != nil {
+		slog.Warn("failed to set safe.directory", "dir", absDir, "error", err)
+	}
 	if err := c.run("config", "user.name", c.UserName); err != nil {
 		return err
 	}
@@ -132,6 +139,17 @@ func isAuthFailure(err error) bool {
 		}
 	}
 	return false
+}
+
+// runGlobal executes a git command without setting the working directory.
+// Used for --global config before the directory is recognized as safe.
+func (c *Client) runGlobal(args ...string) error {
+	cmd := exec.Command("git", args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git %s: %w\n%s", strings.Join(args, " "), err, out)
+	}
+	return nil
 }
 
 func (c *Client) run(args ...string) error {
