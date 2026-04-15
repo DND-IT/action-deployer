@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: action-deployer
+  description: GitHub Action that atomically updates Helm values files across environments
+  annotations:
+    github.com/project-slug: DND-IT/action-deployer
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - github-action
+  links:
+    - url: https://github.com/DND-IT/action-deployer
+      title: GitHub Repository
+      icon: github
+    - url: https://github.com/DND-IT/action-deployer/issues
+      title: GitHub Issues
+      icon: bug_report
+    - url: https://github.com/DND-IT/action-deployer/pulls
+      title: GitHub Pull Requests
+      icon: assignment
+    - url: https://github.com/DND-IT/action-deployer/releases
+      title: GitHub Releases
+      icon: release
+spec:
+  type: github-action
+  lifecycle: production
+  owner: group:default/dai

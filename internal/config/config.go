@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"gopkg.in/yaml.v3"
 )
@@ -24,17 +25,25 @@ type GlobalConfig struct {
 
 type EnvironmentConfig struct {
 	AWSAccountID string `yaml:"aws_account_id"`
-	Deploy       string `yaml:"deploy"` // "auto" | "pr"
-	Tag          string `yaml:"tag"`    // "version" | "sha"
+	Deploy       string `yaml:"deploy"`       // "auto" | "pr"
+	Tag          string `yaml:"tag"`          // "version" | "sha"
+	ValuesMode   string `yaml:"values_mode"`  // "image" (default) | "key" | "marker"
+	ValuesKey    string `yaml:"values_key"`   // dot-path for key mode
+	AutoMerge    bool   `yaml:"auto_merge"`   // enable auto-merge on deploy PRs
+	MergeMethod  string `yaml:"merge_method"` // MERGE | SQUASH | REBASE
 }
 
 type ServiceConfig struct {
-	ECRRepository string `yaml:"ecr_repository"`
-	Release       string `yaml:"release"`       // "auto" | "gated"
-	Deploy        string `yaml:"deploy"`        // overrides environment-level
-	Tag           string `yaml:"tag"`           // overrides environment-level
-	TagPrefix     string `yaml:"tag_prefix"`
+	ECRRepository   string `yaml:"ecr_repository"`
+	Release         string `yaml:"release"` // "auto" | "gated"
+	Deploy          string `yaml:"deploy"`  // overrides environment-level
+	Tag             string `yaml:"tag"`     // overrides environment-level
+	TagPrefix       string `yaml:"tag_prefix"`
 	VersionStrategy string `yaml:"version_strategy"`
+	ValuesMode      string `yaml:"values_mode"`
+	ValuesKey       string `yaml:"values_key"`
+	AutoMerge       *bool  `yaml:"auto_merge"` // pointer so "unset" differs from "false"
+	MergeMethod     string `yaml:"merge_method"`
 }
 
 // Environment is a fully-resolved environment entry for a specific service.
@@ -44,6 +53,10 @@ type Environment struct {
 	Tag          string // "version" | "sha"
 	AWSAccountID string
 	AWSRegion    string
+	ValuesMode   string
+	ValuesKey    string
+	AutoMerge    bool
+	MergeMethod  string
 }
 
 // Load reads and parses the matrix config file at path.
@@ -61,13 +74,14 @@ func Load(path string) (*MatrixConfig, error) {
 
 // Resolve returns the list of environments for the given service,
 // applying merge precedence: global < environment < service.
+// Environments are sorted by name for deterministic iteration.
 func (c *MatrixConfig) Resolve(service string) ([]Environment, error) {
 	svcCfg, ok := c.Service[service]
 	if !ok {
 		return nil, fmt.Errorf("service %q not found in config", service)
 	}
 
-	var envs []Environment
+	envs := make([]Environment, 0, len(c.Environment))
 	for envName, envCfg := range c.Environment {
 		e := Environment{
 			Name:         envName,
@@ -75,6 +89,10 @@ func (c *MatrixConfig) Resolve(service string) ([]Environment, error) {
 			Tag:          envCfg.Tag,
 			AWSAccountID: envCfg.AWSAccountID,
 			AWSRegion:    c.Global.AWSRegion,
+			ValuesMode:   envCfg.ValuesMode,
+			ValuesKey:    envCfg.ValuesKey,
+			AutoMerge:    envCfg.AutoMerge,
+			MergeMethod:  envCfg.MergeMethod,
 		}
 		// Service-level overrides
 		if svcCfg.Deploy != "" {
@@ -83,7 +101,29 @@ func (c *MatrixConfig) Resolve(service string) ([]Environment, error) {
 		if svcCfg.Tag != "" {
 			e.Tag = svcCfg.Tag
 		}
+		if svcCfg.ValuesMode != "" {
+			e.ValuesMode = svcCfg.ValuesMode
+		}
+		if svcCfg.ValuesKey != "" {
+			e.ValuesKey = svcCfg.ValuesKey
+		}
+		if svcCfg.AutoMerge != nil {
+			e.AutoMerge = *svcCfg.AutoMerge
+		}
+		if svcCfg.MergeMethod != "" {
+			e.MergeMethod = svcCfg.MergeMethod
+		}
+
+		// Defaults
+		if e.ValuesMode == "" {
+			e.ValuesMode = "image"
+		}
+		if e.MergeMethod == "" {
+			e.MergeMethod = "SQUASH"
+		}
 		envs = append(envs, e)
 	}
+
+	sort.Slice(envs, func(i, j int) bool { return envs[i].Name < envs[j].Name })
 	return envs, nil
 }

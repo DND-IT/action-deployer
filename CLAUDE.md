@@ -1,39 +1,47 @@
 # action-deployer
 
-A GitHub Action (Go) that atomically deploys Helm chart value changes across environments,
-driven by `matrix.config.yaml`. Replaces scattered conditional logic in service pipelines.
-
-## Purpose
-
-Reads `matrix.config.yaml`, resolves environments for a service, then:
-- `deploy: auto` — updates all values files and pushes ONE atomic commit to the default branch
-- `deploy: pr`   — creates or updates a PR on a `deploy/{service}/{env}` branch
+A GitHub Action (Go) that updates YAML values files and either auto-commits or opens PRs.
+Two modes:
+- **Matrix mode** — driven by `matrix.config.yaml`; resolves per-env deploy policy
+- **Direct mode** — one or more files updated with one value, no config file required
 
 ## Repo Structure
 
+Follows the DND-IT action convention (see sibling repos: `action-config`, `action-releaser`):
+
 ```
-main.go                      — entry point; reads INPUT_* env vars
-action.yml                   — GitHub Action definition
-Dockerfile                   — multi-stage build (golang:1.24-alpine → alpine + git)
+cmd/action-deployer/main.go   — entry point; reads INPUT_* env vars
+action.yaml                   — GitHub Action definition (not .yml)
+Dockerfile                    — multi-stage build (golang:1.25-alpine → alpine + git)
+catalog-info.yaml             — Backstage catalog entry
+release-please-config.json    — release-please (release-type: go)
+.release-please-manifest.json — release-please version manifest
+LICENSE                       — MIT
 internal/
-  config/config.go           — parse matrix.config.yaml; Resolve() merges global < env < service
-  values/values.go           — update image.tag in a Helm values file without full reserialise
-  git/git.go                 — git configure / add / commit / push with retry
-  github/github.go           — GitHub REST API: create/update deploy PRs
-  deployer/deployer.go       — orchestrates the full flow
-SPEC.md                      — full design: inputs, outputs, merge precedence, error handling
-TODO.md                      — implementation checklist
+  config/config.go            — parse matrix.config.yaml; Resolve() merges global < env < service
+  values/values.go            — update scalars in YAML via hybrid yaml.v3 + byte-level replacement
+  git/git.go                  — configure/add/commit/push/checkout/force-push
+  github/github.go            — GitHub REST (PR CRUD) + GraphQL (enablePullRequestAutoMerge)
+  deployer/deployer.go        — orchestrates both matrix + direct flows
+.github/workflows/
+  test.yaml                   — lint + test + PR Docker build + PR image cleanup
+  release.yaml                — release-please + GHCR push + v{major}/v{major.minor} alias tags
+SPEC.md                       — full design spec
+TODO.md                       — implementation checklist
+docs/designs/                 — design docs (CEO plan + eng review)
 ```
 
 ## Key Design Decisions
 
-- **No full YAML reserialise** — `values.go` uses a line-oriented scanner to update `tag:` inside
-  the `image:` block. This preserves comments and formatting. Chart root (`web` / `worker`) is
-  irrelevant; the scan is agnostic.
-- **Atomic commit** — all `deploy: auto` environments are staged before a single `git commit + push`.
-  Exponential-backoff retry (pull --rebase + push, up to 3 attempts) handles concurrent pushes
-  from other service pipelines.
-- **Single dependency** — only `gopkg.in/yaml.v3` for config parsing. No framework.
+- **Hybrid YAML editing** — `values.go` parses with `yaml.v3` to locate the target node's line
+  number, then does a byte-level line replacement. Preserves comments, indentation, inline
+  comments exactly. Supports `image` mode (auto-detect mapping with `repository`+`tag`), `key`
+  mode (dot-notation), `marker` mode (`# x-yaml-update`).
+- **Atomic multi-file writes** — direct mode pre-flights every file (`values.HasTarget`) before
+  any write. Prevents partial updates when one file is misconfigured.
+- **Atomic commit** — `deploy: auto` environments stage all files before a single `git commit+push`.
+  Exponential-backoff retry (pull --rebase + push) handles concurrent pushes.
+- **Single runtime dependency** — only `gopkg.in/yaml.v3`.
 
 ## matrix.config.yaml Contract
 
@@ -52,24 +60,26 @@ service:
     deploy: auto   # overrides environment-level deploy for all envs
 ```
 
+See `README.md` for the full contract.
+
 ## Running Locally
 
 ```bash
 go build ./...
-go test ./...
+go test -race -count=1 ./...
 
-# Simulate an action run
-INPUT_SERVICE=ts-spa \
-INPUT_VERSION=2026.04.14.5 \
-INPUT_SHA=abc1234 \
-INPUT_TOKEN=ghp_... \
-INPUT_DRY_RUN=true \
-  go run .
+# Matrix mode
+INPUT_SERVICE=ts-spa INPUT_VERSION=2026.04.14.5 INPUT_SHA=abc1234 \
+  INPUT_TOKEN=x INPUT_DRY_RUN=true \
+  go run ./cmd/action-deployer
+
+# Direct mode
+INPUT_FILE=charts/my-app/values.yaml INPUT_VALUE=2.0.0 \
+  INPUT_TOKEN=x INPUT_DRY_RUN=true \
+  go run ./cmd/action-deployer
 ```
 
-## What Needs Finishing (see TODO.md)
+## Status
 
-- `deployPR` in `deployer.go` has a stub — needs to push values change to the deploy branch
-  before calling `EnsurePR`
-- Tests for `config`, `values`, and an integration test for the full deploy flow
-- CI workflows: lint + test on PR, release pipeline using action-releaser
+Core + tests complete (77 passing). See TODO.md for deferred items (Kustomize support,
+multi-repo gitops, rate-limit retry, version_strategy wiring).

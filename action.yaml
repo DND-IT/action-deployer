@@ -1,0 +1,113 @@
+name: Deployer
+description: Atomically updates Helm values files (matrix mode driven by matrix.config.yaml, or direct mode for a single file).
+author: DND-IT
+
+inputs:
+  # --- Matrix mode inputs (used when `file` is NOT set) ---
+  service:
+    description: "Service name; must match a key under service: in the matrix config"
+    required: false
+  version:
+    description: "Release version string (e.g. 1.4.0 or 2026.04.14)"
+    required: false
+  sha:
+    description: "Short commit SHA; used when an environment has tag: sha"
+    required: false
+  config:
+    description: "Path to the matrix config file"
+    required: false
+    default: ".github/matrix.config.yaml"
+  charts_dir:
+    description: "Root directory for per-service Helm chart value overrides"
+    required: false
+    default: "deploy/charts"
+
+  # --- Direct mode inputs (presence of `file` triggers direct mode) ---
+  file:
+    description: "Path to YAML file(s) to update — newline-separated for multiple. Triggers direct mode."
+    required: false
+  value:
+    description: "New value to write — applied to every file in `file`. Required when file is set."
+    required: false
+  mode:
+    description: "Update mode: image | key | marker (direct mode only)"
+    required: false
+    default: "image"
+  key:
+    description: "Dot-notation key path (direct mode, required when mode=key)"
+    required: false
+  deploy:
+    description: "direct mode: auto (commit to default branch) | pr (open PR on new branch)"
+    required: false
+    default: "auto"
+  branch:
+    description: "PR branch name (direct mode, required when deploy=pr)"
+    required: false
+  commit_message:
+    description: "Override the commit message (direct mode)"
+    required: false
+  auto_merge:
+    description: "Enable auto-merge on the deploy PR (direct mode, deploy=pr)"
+    required: false
+    default: "false"
+  merge_method:
+    description: "MERGE | SQUASH | REBASE (direct mode, deploy=pr)"
+    required: false
+    default: "SQUASH"
+
+  # --- Shared inputs ---
+  token:
+    description: "GitHub token with contents:write and pull-requests:write"
+    required: true
+  git_user_name:
+    description: "Git commit author name"
+    required: false
+    default: "github-actions[bot]"
+  git_user_email:
+    description: "Git commit author email"
+    required: false
+    default: "github-actions[bot]@users.noreply.github.com"
+  dry_run:
+    description: "Print plan without pushing or creating PRs"
+    required: false
+    default: "false"
+
+outputs:
+  deployed:
+    description: "'true' if at least one environment was updated"
+  environments:
+    description: "JSON array of environment names that were deployed (matrix mode)"
+  commit_sha:
+    description: "SHA of the deploy commit (auto mode) or empty (PR mode)"
+  pr_urls:
+    description: "JSON array of PR URLs opened/updated"
+  changed_files:
+    description: "Newline-separated list of updated values files"
+  diff:
+    description: "Summary of changes: file: old → new (one per line)"
+
+runs:
+  using: docker
+  image: Dockerfile
+  env:
+    # Matrix mode
+    INPUT_SERVICE: ${{ inputs.service }}
+    INPUT_VERSION: ${{ inputs.version }}
+    INPUT_SHA: ${{ inputs.sha }}
+    INPUT_CONFIG: ${{ inputs.config }}
+    INPUT_CHARTS_DIR: ${{ inputs.charts_dir }}
+    # Direct mode
+    INPUT_FILE: ${{ inputs.file }}
+    INPUT_VALUE: ${{ inputs.value }}
+    INPUT_MODE: ${{ inputs.mode }}
+    INPUT_KEY: ${{ inputs.key }}
+    INPUT_DEPLOY: ${{ inputs.deploy }}
+    INPUT_BRANCH: ${{ inputs.branch }}
+    INPUT_COMMIT_MESSAGE: ${{ inputs.commit_message }}
+    INPUT_AUTO_MERGE: ${{ inputs.auto_merge }}
+    INPUT_MERGE_METHOD: ${{ inputs.merge_method }}
+    # Shared
+    INPUT_TOKEN: ${{ inputs.token }}
+    INPUT_GIT_USER_NAME: ${{ inputs.git_user_name }}
+    INPUT_GIT_USER_EMAIL: ${{ inputs.git_user_email }}
+    INPUT_DRY_RUN: ${{ inputs.dry_run }}
