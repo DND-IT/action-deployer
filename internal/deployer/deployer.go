@@ -378,7 +378,8 @@ func deployAuto(opts Options, envs []config.Environment, result *Result) error {
 		return nil
 	}
 
-	msg := fmt.Sprintf("deploy(%s): %s", opts.Service, opts.Version)
+	envList := strings.Join(result.Environments, ",")
+	msg := fmt.Sprintf("deploy(%s/%s): %s", opts.Service, envList, opts.Version)
 	if err := gc.Commit(msg); err != nil {
 		return err
 	}

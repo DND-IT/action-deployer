@@ -110,7 +110,7 @@ service:
 	// Verify the commit is pushed to remote.
 	cmd := exec.Command("git", "-C", bare, "log", "main", "--oneline")
 	out, _ := cmd.CombinedOutput()
-	if !strings.Contains(string(out), "deploy(svc-a): 2.0.0") {
+	if !strings.Contains(string(out), "deploy(svc-a/dev): 2.0.0") {
 		t.Errorf("deploy commit not pushed:\n%s", out)
 	}
 	// Verify the tag was updated in the working tree.
