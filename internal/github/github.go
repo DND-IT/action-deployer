@@ -100,7 +100,7 @@ func (c *Client) EnableAutoMerge(nodeID, mergeMethod string) error {
 	if err != nil {
 		return fmt.Errorf("graphql request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
@@ -194,7 +194,7 @@ func (c *Client) do(req *http.Request, out any) error {
 	if err != nil {
 		return fmt.Errorf("http %s %s: %w", req.Method, req.URL, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)

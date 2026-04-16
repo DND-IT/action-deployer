@@ -600,8 +600,10 @@ func WriteOutputs(result *Result) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	_, err = f.WriteString(content)
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
 	return err
 }
 
@@ -630,8 +632,10 @@ func WriteStepSummary(result *Result, service, version string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	_, err = f.WriteString(sb.String())
+	if closeErr := f.Close(); err == nil {
+		err = closeErr
+	}
 	return err
 }
 
