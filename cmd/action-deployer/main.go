@@ -66,17 +66,22 @@ func main() {
 		})
 	}
 
+	version := os.Getenv("INPUT_VERSION")
+	if version == "" {
+		version = os.Getenv("INPUT_VALUE")
+	}
+
 	if err != nil {
 		slog.Error("deploy failed", "mode", mode, "error", err)
 		_ = deployer.WriteOutputs(result)
-		_ = deployer.WriteStepSummary(result, modeLabel(mode), "")
+		_ = deployer.WriteStepSummary(result, modeLabel(mode), version)
 		os.Exit(1)
 	}
 	if err := deployer.WriteOutputs(result); err != nil {
 		slog.Error("writing outputs", "error", err)
 		os.Exit(1)
 	}
-	if err := deployer.WriteStepSummary(result, modeLabel(mode), ""); err != nil {
+	if err := deployer.WriteStepSummary(result, modeLabel(mode), version); err != nil {
 		slog.Warn("writing step summary", "error", err)
 	}
 	slog.Info("done",
