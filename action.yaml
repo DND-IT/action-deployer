@@ -87,27 +87,5 @@ outputs:
     description: "Summary of changes: file: old → new (one per line)"
 
 runs:
-  using: docker
-  image: Dockerfile
-  env:
-    # Matrix mode
-    INPUT_SERVICE: ${{ inputs.service }}
-    INPUT_VERSION: ${{ inputs.version }}
-    INPUT_SHA: ${{ inputs.sha }}
-    INPUT_CONFIG: ${{ inputs.config }}
-    INPUT_CHARTS_DIR: ${{ inputs.charts_dir }}
-    # Direct mode
-    INPUT_FILE: ${{ inputs.file }}
-    INPUT_VALUE: ${{ inputs.value }}
-    INPUT_MODE: ${{ inputs.mode }}
-    INPUT_KEY: ${{ inputs.key }}
-    INPUT_DEPLOY: ${{ inputs.deploy }}
-    INPUT_BRANCH: ${{ inputs.branch }}
-    INPUT_COMMIT_MESSAGE: ${{ inputs.commit_message }}
-    INPUT_AUTO_MERGE: ${{ inputs.auto_merge }}
-    INPUT_MERGE_METHOD: ${{ inputs.merge_method }}
-    # Shared
-    INPUT_TOKEN: ${{ inputs.token }}
-    INPUT_GIT_USER_NAME: ${{ inputs.git_user_name }}
-    INPUT_GIT_USER_EMAIL: ${{ inputs.git_user_email }}
-    INPUT_DRY_RUN: ${{ inputs.dry_run }}
+  using: 'docker'
+  image: 'docker://ghcr.io/dnd-it/action-deployer:0.1.1' # x-release-please-version
