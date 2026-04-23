@@ -561,7 +561,7 @@ func buildPRBody(opts Options, env, oldTag, newTag string) string {
 // WriteOutputs writes GitHub Actions outputs to $GITHUB_OUTPUT.
 func WriteOutputs(result *Result) error {
 	outputFile := os.Getenv("GITHUB_OUTPUT")
-	if outputFile == "" {
+	if outputFile == "" || result == nil {
 		return nil
 	}
 
@@ -611,7 +611,7 @@ func WriteOutputs(result *Result) error {
 // Skips silently when the env var is unset (local runs).
 func WriteStepSummary(result *Result, service, version string) error {
 	path := os.Getenv("GITHUB_STEP_SUMMARY")
-	if path == "" {
+	if path == "" || result == nil {
 		return nil
 	}
 	var sb strings.Builder
