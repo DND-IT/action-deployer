@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/DND-IT/action-deployer/compare/v0.1.2...v0.1.3) (2026-04-23)
+
+
+### Bug Fixes
+
+* nil pointer panic in WriteOutputs/WriteStepSummary on deploy error; bump go 1.26.2 ([3999e18](https://github.com/DND-IT/action-deployer/commit/3999e183ce424d631177c21309389a5aa2b3d9db))
+
 ## [0.1.2](https://github.com/DND-IT/action-deployer/compare/v0.1.1...v0.1.2) (2026-04-16)
 
 
