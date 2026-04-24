@@ -88,4 +88,4 @@ outputs:
 
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/dnd-it/action-deployer:0.1.3' # x-release-please-version
+  image: 'docker://ghcr.io/dnd-it/action-deployer:0.1.4' # x-release-please-version

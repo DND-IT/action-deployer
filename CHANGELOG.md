@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/DND-IT/action-deployer/compare/v0.1.3...v0.1.4) (2026-04-24)
+
+
+### Bug Fixes
+
+* bump builder image to golang:1.26-alpine to match go.mod requirement ([25cc220](https://github.com/DND-IT/action-deployer/commit/25cc2200ad09aa9b0ab98e11f5bcc661ac6112e0))
+
 ## [0.1.3](https://github.com/DND-IT/action-deployer/compare/v0.1.2...v0.1.3) (2026-04-23)
 
 
