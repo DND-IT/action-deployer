@@ -1,9 +1,8 @@
-name: Deployer
+name: Rollout
 description: Atomically updates Helm values files (matrix mode driven by matrix.config.yaml, or direct mode for a single file).
 author: DND-IT
 
 inputs:
-  # --- Matrix mode inputs (used when `file` is NOT set) ---
   service:
     description: "Service name; must match a key under service: in the matrix config"
     required: false
@@ -16,18 +15,17 @@ inputs:
   config:
     description: "Path to the matrix config file"
     required: false
-    default: ".github/matrix.config.yaml"
+    default: ".github/matrix-config.yaml"
   charts_dir:
     description: "Root directory for per-service Helm chart value overrides"
     required: false
     default: "deploy/charts"
 
-  # --- Direct mode inputs (presence of `file` triggers direct mode) ---
   file:
     description: "Path to YAML file(s) to update — newline-separated for multiple. Triggers direct mode."
     required: false
   value:
-    description: "New value to write — applied to every file in `file`. Required when file is set."
+    description: "New value to write — applied to every file in `file`."
     required: false
   mode:
     description: "Update mode: image | key | marker (direct mode only)"
@@ -37,7 +35,7 @@ inputs:
     description: "Dot-notation key path (direct mode, required when mode=key)"
     required: false
   deploy:
-    description: "direct mode: auto (commit to default branch) | pr (open PR on new branch)"
+    description: "direct mode: auto | pr"
     required: false
     default: "auto"
   branch:
@@ -55,7 +53,6 @@ inputs:
     required: false
     default: "SQUASH"
 
-  # --- Shared inputs ---
   token:
     description: "GitHub token with contents:write and pull-requests:write"
     required: true
@@ -88,4 +85,9 @@ outputs:
 
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/dnd-it/action-deployer:0.1.4' # x-release-please-version
+  image: 'docker://ghcr.io/dnd-it/tamci:1.0.0'
+  args: [rollout]
+
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'

@@ -172,23 +172,6 @@ target line number, then a byte-level line replacement writes the new value.
 Result: full structural awareness (key paths, nested mappings, marker comments)
 with zero formatting drift.
 
-## Local development
-
-```bash
-go build ./...
-go test -race -count=1 ./...
-```
-
-Smoke-test a dry run against a local repo:
-
-```bash
-INPUT_FILE=$'dev/values.yaml\nprod/values.yaml' \
-INPUT_VALUE=2.0.0 \
-INPUT_TOKEN=x \
-INPUT_DRY_RUN=true \
-  go run ./cmd/action-deployer
-```
-
 ## Permissions
 
 The token passed via `token:` needs:
@@ -203,8 +186,10 @@ permissions:
   pull-requests: write
 ```
 
-## See also
 
-- `SPEC.md` — full design spec
-- `docs/designs/action-deployer.md` — implementation plan with review decisions
-- `TODO.md` — deferred work (Kustomize support, multi-repo gitops, rate-limit retry)
+## Implementation
+
+This action is a thin shim over [tamci](https://github.com/DND-IT/tamci): `action.yaml` runs the
+`ghcr.io/dnd-it/tamci` image with `args: [rollout]`. The Go code, tests, and release
+process live in that repo. To pick up a new tamci version, bump the image tag in
+`action.yaml`.
