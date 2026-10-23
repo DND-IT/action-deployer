@@ -1,5 +1,11 @@
 # action-deployer
 
+> [!WARNING]
+> **Deprecated: this action has been replaced by [tamci](https://github.com/DND-IT/tamci).**
+> tamci is a unified Go CLI that consolidates DND-IT's GitHub Actions. Use it for
+> new workflows and migrate existing ones. This repository is no longer maintained:
+> do not expect further features or fixes here.
+
 A GitHub Action that updates YAML values files and either commits+pushes or opens
 a PR. Two modes:
 
